@@ -10,7 +10,7 @@
             "@id": "credentialSubject",
             "@type": "@id",
             "@context": {
-              "@vocab": "https://openg2p.org/credential#OpenG2PRegistryVerifiableCredential#credentialSubject#",
+              "@vocab": "https://openg2p.org/credential#OpenG2PBeneficiaryVerifiableCredential#credentialSubject#",
               "name": {
                 "@id": "name",
                 "@type": "@id",

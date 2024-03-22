@@ -13,7 +13,7 @@ from pyld import jsonld
 
 from odoo import api, fields, models, modules, tools
 
-from ..json_encoder import RegistryJSONEncoder
+from ..json_encoder import VCJSONEncoder
 
 _logger = logging.getLogger(__name__)
 
@@ -23,11 +23,11 @@ class OpenIDVCIssuer(models.Model):
     _description = "OpenID VCI Issuer"
 
     name = fields.Char(required=True)
-    type = fields.Selection(
+    issuer_type = fields.Selection(
         [
             (
-                "OpenG2PRegistryVerifiableCredential",
-                "OpenG2PRegistryVerifiableCredential",
+                "Registry",
+                "Registry",
             )
         ],
         required=True,
@@ -36,17 +36,21 @@ class OpenIDVCIssuer(models.Model):
     supported_format = fields.Selection(
         [("ldp_vc", "ldp_vc")], default="ldp_vc", required=True
     )
-    unique_issuer_id = fields.Char(default="did:example:12345678abcdefgh")
+    unique_issuer_id = fields.Char(
+        "Unique Issuer ID", default="did:example:12345678abcdefgh"
+    )
 
     encryption_provider_id = fields.Many2one("g2p.encryption.provider")
 
-    auth_sub_id_type_id = fields.Many2one("g2p.id.type")
+    auth_sub_id_type_id = fields.Many2one("Auth Subject ID Type", "g2p.id.type")
 
-    auth_allowed_auds = fields.Text()
+    auth_allowed_auds = fields.Text("Auth Allowed Audiences")
     auth_allowed_issuers = fields.Text()
     auth_issuer_jwks_mapping = fields.Text()
-    auth_allowed_client_ids = fields.Text()
+    auth_allowed_client_ids = fields.Text("Auth Allowed Client IDs")
 
+    # These fields cannot be empty. They will get autofilled based on issuer_type
+    credential_type = fields.Char()
     credential_format = fields.Text()
     issuer_metadata_text = fields.Text()
     contexts_json = fields.Text()
@@ -68,12 +72,12 @@ class OpenIDVCIssuer(models.Model):
             ("scope", "in", auth_scopes),
         ]
         if request_types:
-            search_domain.append(("type", "in", request_types))
+            search_domain.append(("credential_type", "in", request_types))
         credential_issuer = self.sudo().search(search_domain)
         if credential_issuer and len(credential_issuer):
             credential_issuer = credential_issuer[0]
         else:
-            raise ValueError("Invalid combination of scope, type, format")
+            raise ValueError("Invalid combination of scope, credential type, format")
 
         request_auth_iss = auth_claims_unverified["iss"]
         # TODO: Client id validation
@@ -112,7 +116,9 @@ class OpenIDVCIssuer(models.Model):
         except Exception as e:
             raise ValueError("Invalid Auth Token received") from e
 
-        issue_vc_func = getattr(credential_issuer, f"issue_vc_{credential_issuer.type}")
+        issue_vc_func = getattr(
+            credential_issuer, f"issue_vc_{credential_issuer.issuer_type}"
+        )
 
         cred_res = issue_vc_func(
             auth_claims=auth_claims_unverified,
@@ -121,9 +127,7 @@ class OpenIDVCIssuer(models.Model):
         _logger.debug("Credential Response for DEBUG; %s", json.dumps(cred_res))
         return cred_res
 
-    def issue_vc_OpenG2PRegistryVerifiableCredential(
-        self, auth_claims, credential_request
-    ):
+    def issue_vc_Registry(self, auth_claims, credential_request):
         self.ensure_one()
         web_base_url = (
             self.env["ir.config_parameter"].sudo().get_param("web.base.url").rstrip("/")
@@ -155,7 +159,7 @@ class OpenIDVCIssuer(models.Model):
         curr_datetime = f'{datetime.utcnow().isoformat(timespec = "milliseconds")}Z'
         credential = jq.first(
             self.credential_format,
-            RegistryJSONEncoder.python_dict_to_json_dict(
+            VCJSONEncoder.python_dict_to_json_dict(
                 {
                     "vc_id": str(uuid.uuid4()),
                     "web_base_url": web_base_url,
@@ -257,37 +261,46 @@ class OpenIDVCIssuer(models.Model):
         sha.update(data)
         return sha.finalize()[0:32]
 
-    @api.constrains("credential_format", "type")
+    @api.constrains("credential_type", "issuer_type")
+    def onchange_credential_type(self):
+        for rec in self:
+            if not rec.credential_type:
+                getattr(rec, f"set_default_credential_type_{rec.issuer_type}")()
+
+    @api.constrains("credential_format", "issuer_type")
     def onchange_credential_format(self):
         for rec in self:
             if not rec.credential_format:
-                getattr(rec, f"set_from_static_file_{rec.type}")(
+                getattr(rec, f"set_from_static_file_{rec.issuer_type}")(
                     file_name="default_credential_format.jq",
                     field_name="credential_format",
                 )
 
-    @api.constrains("issuer_metadata_text", "type")
+    @api.constrains("issuer_metadata_text", "issuer_type")
     def onchange_issuer_metadata_text(self):
         for rec in self:
             if not rec.issuer_metadata_text:
-                getattr(rec, f"set_from_static_file_{rec.type}")(
+                getattr(rec, f"set_from_static_file_{rec.issuer_type}")(
                     file_name="default_issuer_metadata.jq",
                     field_name="issuer_metadata_text",
                 )
 
-    @api.constrains("contexts_json", "type")
+    @api.constrains("contexts_json", "issuer_type")
     def onchange_contexts_json(self):
         for rec in self:
             if not rec.contexts_json:
-                getattr(rec, f"set_from_static_file_{rec.type}")(
+                getattr(rec, f"set_from_static_file_{rec.issuer_type}")(
                     file_name="default_contexts.json",
                     field_name="contexts_json",
                 )
 
-    def set_from_static_file_OpenG2PRegistryVerifiableCredential(
+    def set_default_credential_type_Registry(self):
+        self.credential_type = "OpenG2PRegistryVerifiableCredential"
+
+    def set_from_static_file_Registry(
         self, module_name="g2p_openid_vci", file_name="", field_name="", **kwargs
     ):
-        default_path = modules.get_resource_path(module_name, "static", file_name)
+        default_path = modules.get_resource_path(module_name, "data", file_name)
         text = ""
         try:
             with open(default_path) as file:

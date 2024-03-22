@@ -3,7 +3,7 @@ import json
 from datetime import date, datetime, timezone
 
 
-class RegistryJSONEncoder(json.JSONEncoder):
+class VCJSONEncoder(json.JSONEncoder):
     def default(self, obj):
         if isinstance(obj, bytes):
             return base64.b64encode(obj).decode()

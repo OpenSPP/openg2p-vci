@@ -9,7 +9,7 @@ from odoo.http import request
 from odoo.addons.base_rest import restapi
 from odoo.addons.base_rest_pydantic.restapi import PydanticModel
 from odoo.addons.component.core import Component
-from odoo.addons.g2p_openid_vci.json_encoder import RegistryJSONEncoder
+from odoo.addons.g2p_openid_vci.json_encoder import VCJSONEncoder
 
 from ..models.openid_vci import (
     CredentialBaseResponse,
@@ -105,7 +105,7 @@ class OpenIdVCIRestService(Component):
         cred_configs = None
         for issuer in vci_issuers:
             issuer["web_base_url"] = web_base_url
-            issuer = RegistryJSONEncoder.python_dict_to_json_dict(issuer)
+            issuer = VCJSONEncoder.python_dict_to_json_dict(issuer)
             issuer_metadata = jq.first(issuer["issuer_metadata_text"], issuer)
             if isinstance(issuer_metadata, list):
                 if not cred_configs:

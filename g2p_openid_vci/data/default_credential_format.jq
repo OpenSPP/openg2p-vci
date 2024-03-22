@@ -4,7 +4,7 @@
         (.web_base_url + "/api/v1/vci/.well-known/contexts.json")
     ],
     "id": .vc_id,
-    "type": ["VerifiableCredential", .issuer.type],
+    "type": ["VerifiableCredential", .issuer.credential_type],
     "issuer": .issuer.unique_issuer_id,
     "issuanceDate": .curr_datetime,
     "credentialSubject": {

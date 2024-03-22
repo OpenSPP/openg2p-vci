@@ -11,7 +11,8 @@ Part of OpenG2P. See LICENSE file for full copyright and licensing details.
             <tree>
                 <field name="name" />
                 <field name="scope" />
-                <field name="type" />
+                <field name="issuer_type" />
+                <field name="credential_type" />
             </tree>
         </field>
     </record>
@@ -25,7 +26,7 @@ Part of OpenG2P. See LICENSE file for full copyright and licensing details.
                 <group name="Base" string="Base">
                     <field name="name" />
                     <field name="scope" />
-                    <field name="type" />
+                    <field name="issuer_type" />
                     <field name="supported_format" />
                     <field name="unique_issuer_id" />
 
@@ -37,6 +38,7 @@ Part of OpenG2P. See LICENSE file for full copyright and licensing details.
                     <field name="auth_issuer_jwks_mapping" />
                     <field name="auth_allowed_client_ids" />
 
+                    <field name="credential_type" />
                     <field name="credential_format" />
                     <field name="issuer_metadata_text" />
                     <field name="contexts_json" />

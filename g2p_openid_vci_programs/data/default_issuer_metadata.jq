@@ -1,6 +1,6 @@
 [
     {
-        "id": .type,
+        "id": .credential_type,
         "format": .supported_format,
         "scope": .scope,
         "cryptographic_binding_methods_supported": [
@@ -15,7 +15,7 @@
         "credential_definition": {
             "type": [
                 "VerifiableCredential",
-                .type
+                .credential_type
             ],
             "credentialSubject": {
                 "fullName": {

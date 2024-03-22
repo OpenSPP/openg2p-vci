@@ -6,7 +6,7 @@ import pyjq as jq  # pylint: disable=[W7936]
 
 from odoo import fields, models
 
-from odoo.addons.g2p_openid_vci.json_encoder import RegistryJSONEncoder
+from odoo.addons.g2p_openid_vci.json_encoder import VCJSONEncoder
 
 _logger = logging.getLogger(__name__)
 
@@ -14,21 +14,19 @@ _logger = logging.getLogger(__name__)
 class BeneficiaryOpenIDVCIssuer(models.Model):
     _inherit = "g2p.openid.vci.issuers"
 
-    type = fields.Selection(
+    issuer_type = fields.Selection(
         selection_add=[
             (
-                "OpenG2PBeneficiaryVerifiableCredential",
-                "OpenG2PBeneficiaryVerifiableCredential",
+                "Beneficiary",
+                "Beneficiary",
             )
         ],
-        ondelete={"OpenG2PBeneficiaryVerifiableCredential": "cascade"},
+        ondelete={"Beneficiary": "cascade"},
     )
 
     program_id = fields.Many2one("g2p.program")
 
-    def issue_vc_OpenG2PBeneficiaryVerifiableCredential(
-        self, auth_claims, credential_request
-    ):
+    def issue_vc_Beneficiary(self, auth_claims, credential_request):
         self.ensure_one()
         web_base_url = (
             self.env["ir.config_parameter"].sudo().get_param("web.base.url").rstrip("/")
@@ -73,7 +71,7 @@ class BeneficiaryOpenIDVCIssuer(models.Model):
         curr_datetime = f'{datetime.utcnow().isoformat(timespec = "milliseconds")}Z'
         credential = jq.first(
             self.credential_format,
-            RegistryJSONEncoder.python_dict_to_json_dict(
+            VCJSONEncoder.python_dict_to_json_dict(
                 {
                     "vc_id": str(uuid.uuid4()),
                     "web_base_url": web_base_url,
@@ -96,6 +94,9 @@ class BeneficiaryOpenIDVCIssuer(models.Model):
         }
         return credential_response
 
-    def set_from_static_file_OpenG2PBeneficiaryVerifiableCredential(self, **kwargs):
+    def set_default_credential_type_Beneficiary(self):
+        self.credential_type = "OpenG2PBeneficiaryVerifiableCredential"
+
+    def set_from_static_file_Beneficiary(self, **kwargs):
         kwargs.setdefault("module_name", "g2p_openid_vci_programs")
-        return self.set_from_static_file_OpenG2PRegistryVerifiableCredential(**kwargs)
+        return self.set_from_static_file_Registry(**kwargs)
