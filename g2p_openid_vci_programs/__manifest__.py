@@ -6,7 +6,7 @@
     "sequence": 1,
     "author": "OpenG2P",
     "website": "https://openg2p.org",
-    "license": "MPL-2",
+    "license": "Other OSI approved licence",
     "development_status": "Alpha",
     "depends": [
         "g2p_openid_vci",

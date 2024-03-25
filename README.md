@@ -9,7 +9,7 @@
 
 # OpenG2P VCI
 
-This repo contains openg2p VC issuance related modules.
+This repo contains openg2p VC issuance related modules. Refer to [OpenG2P Docs](https://docs.openg2p.org).
 
 <!-- /!\ do not modify below this line -->
 
@@ -17,7 +17,13 @@ This repo contains openg2p VC issuance related modules.
 
 [//]: # (addons)
 
-This part will be replaced when running the oca-gen-addons-table script from OCA/maintainer-tools.
+Available addons
+----------------
+addon | version | maintainers | summary
+--- | --- | --- | ---
+[g2p_openid_vci](g2p_openid_vci/) | 17.0.1.2.0 |  | G2P OpenID VCI: Base
+[g2p_openid_vci_programs](g2p_openid_vci_programs/) | 17.0.1.2.0 |  | G2P OpenID VCI: Program Beneficiaries
+[g2p_openid_vci_rest_api](g2p_openid_vci_rest_api/) | 17.0.1.2.0 |  | G2P OpenID VCI: Rest API
 
 [//]: # (end addons)
 
@@ -25,7 +31,7 @@ This part will be replaced when running the oca-gen-addons-table script from OCA
 
 ## Licenses
 
-This repository is licensed under [AGPL-3.0](LICENSE).
+This repository is licensed under [MPL-2.0](LICENSE).
 
 However, each module can have a totally different license, as long as they adhere to OpenG2P
 policy. Consult each module's `__manifest__.py` file, which contains a `license` key

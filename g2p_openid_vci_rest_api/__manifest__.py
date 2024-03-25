@@ -1,6 +1,5 @@
-# Part of OpenG2P. See LICENSE file for full copyright and licensing details.
 {
-    "name": "G2P OpenID VCI: Base",
+    "name": "G2P OpenID VCI: Rest API",
     "category": "G2P",
     "version": "17.0.1.2.0",
     "sequence": 1,
@@ -9,14 +8,12 @@
     "license": "Other OSI approved licence",
     "development_status": "Alpha",
     "depends": [
-        "g2p_registry_base",
-        "g2p_encryption",
+        "g2p_openid_vci",
+        "fastapi",
+        "extendable_fastapi",
     ],
-    "external_dependencies": {"python": ["cryptography<37", "python-jose", "pyjq", "PyLD"]},
-    "data": [
-        "security/ir.model.access.csv",
-        "views/vci_issuers.xml",
-    ],
+    "external_dependencies": {"python": ["extendable-pydantic", "pydantic", "pyjq"]},
+    "data": ["data/fastapi_endpoint_vci.xml"],
     "assets": {
         "web.assets_backend": [],
         "web.assets_qweb": [],

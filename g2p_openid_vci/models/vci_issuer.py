@@ -1,5 +1,3 @@
-# pylint: disable=[W7936]
-
 import json
 import logging
 import uuid
@@ -38,7 +36,7 @@ class OpenIDVCIssuer(models.Model):
 
     encryption_provider_id = fields.Many2one("g2p.encryption.provider")
 
-    auth_sub_id_type_id = fields.Many2one("Auth Subject ID Type", "g2p.id.type")
+    auth_sub_id_type_id = fields.Many2one("g2p.id.type", "Auth Subject ID Type")
 
     auth_allowed_auds = fields.Text("Auth Allowed Audiences")
     auth_allowed_issuers = fields.Text()
@@ -151,7 +149,7 @@ class OpenIDVCIssuer(models.Model):
                     "curr_datetime": curr_datetime,
                     "partner": partner_dict,
                     "partner_address": self.get_full_address(partner.address),
-                    "partner_face": self.get_image_base64_data_in_url(partner.image_1920.decode()),
+                    "partner_face": self.get_image_base64_data_in_url((partner.image_1920 or b"").decode()),
                     "reg_ids": reg_ids_dict,
                 },
             ),
@@ -288,7 +286,7 @@ class OpenIDVCIssuer(models.Model):
                 if field_name:
                     self.write({field_name: text})
         except Exception:
-            _logger.exception("Could not set default contexts json")
+            _logger.exception(f"Could not set default {field_name}")
         return text
 
     @api.model

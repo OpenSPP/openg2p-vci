@@ -2,7 +2,7 @@ import logging
 import uuid
 from datetime import datetime
 
-import pyjq as jq  # pylint: disable=[W7936]
+import pyjq as jq
 
 from odoo import fields, models
 
