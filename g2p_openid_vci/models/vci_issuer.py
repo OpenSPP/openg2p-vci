@@ -33,16 +33,12 @@ class OpenIDVCIssuer(models.Model):
         required=True,
     )
     scope = fields.Char(required=True)
-    supported_format = fields.Selection(
-        [("ldp_vc", "ldp_vc")], default="ldp_vc", required=True
-    )
-    unique_issuer_id = fields.Char(
-        "Unique Issuer ID", default="did:example:12345678abcdefgh"
-    )
+    supported_format = fields.Selection([("ldp_vc", "ldp_vc")], default="ldp_vc", required=True)
+    unique_issuer_id = fields.Char("Unique Issuer ID", default="did:example:12345678abcdefgh")
 
     encryption_provider_id = fields.Many2one("g2p.encryption.provider")
 
-    auth_sub_id_type_id = fields.Many2one("Auth Subject ID Type", "g2p.id.type")
+    auth_sub_id_type_id = fields.Many2one("g2p.id.type", "Auth Subject ID Type")
 
     auth_allowed_auds = fields.Text("Auth Allowed Audiences")
     auth_allowed_issuers = fields.Text()
@@ -85,9 +81,7 @@ class OpenIDVCIssuer(models.Model):
         try:
             auth_allowed_iss = (credential_issuer.auth_allowed_issuers or "").split()
             auth_allowed_aud = (credential_issuer.auth_allowed_auds or "").split()
-            auth_jwks_mapping = (
-                credential_issuer.auth_issuer_jwks_mapping or ""
-            ).split()
+            auth_jwks_mapping = (credential_issuer.auth_issuer_jwks_mapping or "").split()
             # TODO: Cache JWKS somehow
             jwks = credential_issuer.get_auth_jwks(
                 request_auth_iss,
@@ -103,9 +97,7 @@ class OpenIDVCIssuer(models.Model):
             if auth_allowed_aud and (
                 (
                     isinstance(auth_claims_unverified["aud"], list)
-                    and set(auth_allowed_aud).issubset(
-                        set(auth_claims_unverified["aud"])
-                    )
+                    and set(auth_allowed_aud).issubset(set(auth_claims_unverified["aud"]))
                 )
                 or (
                     isinstance(auth_claims_unverified["aud"], str)
@@ -116,9 +108,7 @@ class OpenIDVCIssuer(models.Model):
         except Exception as e:
             raise ValueError("Invalid Auth Token received") from e
 
-        issue_vc_func = getattr(
-            credential_issuer, f"issue_vc_{credential_issuer.issuer_type}"
-        )
+        issue_vc_func = getattr(credential_issuer, f"issue_vc_{credential_issuer.issuer_type}")
 
         cred_res = issue_vc_func(
             auth_claims=auth_claims_unverified,
@@ -129,9 +119,7 @@ class OpenIDVCIssuer(models.Model):
 
     def issue_vc_Registry(self, auth_claims, credential_request):
         self.ensure_one()
-        web_base_url = (
-            self.env["ir.config_parameter"].sudo().get_param("web.base.url").rstrip("/")
-        )
+        web_base_url = self.env["ir.config_parameter"].sudo().get_param("web.base.url").rstrip("/")
         reg_id = (
             self.env["g2p.reg.id"]
             .sudo()
@@ -145,16 +133,12 @@ class OpenIDVCIssuer(models.Model):
         )
         partner = None
         if not reg_id:
-            raise ValueError(
-                "ID not found in DB. Invalid Subject Received in auth claims"
-            )
+            raise ValueError("ID not found in DB. Invalid Subject Received in auth claims")
 
         partner = reg_id.partner_id
 
         partner_dict = partner.read()[0]
-        reg_ids_dict = {
-            reg_id.id_type.name: reg_id.read()[0] for reg_id in partner.reg_ids
-        }
+        reg_ids_dict = {reg_id.id_type.name: reg_id.read()[0] for reg_id in partner.reg_ids}
 
         curr_datetime = f'{datetime.utcnow().isoformat(timespec = "milliseconds")}Z'
         credential = jq.first(
@@ -167,9 +151,7 @@ class OpenIDVCIssuer(models.Model):
                     "curr_datetime": curr_datetime,
                     "partner": partner_dict,
                     "partner_address": self.get_full_address(partner.address),
-                    "partner_face": self.get_image_base64_data_in_url(
-                        partner.image_1920.decode()
-                    ),
+                    "partner_face": self.get_image_base64_data_in_url((partner.image_1920 or b"").decode()),
                     "reg_ids": reg_ids_dict,
                 },
             ),
@@ -206,9 +188,7 @@ class OpenIDVCIssuer(models.Model):
     def build_empty_ld_proof(self):
         self.ensure_one()
         curr_datetime = f'{datetime.utcnow().isoformat(timespec = "milliseconds")}Z'
-        web_base_url = (
-            self.env["ir.config_parameter"].sudo().get_param("web.base.url").rstrip("/")
-        )
+        web_base_url = self.env["ir.config_parameter"].sudo().get_param("web.base.url").rstrip("/")
         # TODO: Remove this hardcoding
         return {
             "@context": [
@@ -232,7 +212,7 @@ class OpenIDVCIssuer(models.Model):
             jwk_url = auth_allowed_jwks_urls[auth_allowed_issuers.index(auth_issuer)]
         except Exception:
             jwk_url = f'{auth_issuer.rstrip("/")}/.well-known/jwks.json'
-        return requests.get(jwk_url).json()
+        return requests.get(jwk_url, timeout=20).json()
 
     def get_encryption_provider(self):
         self.ensure_one()
@@ -308,7 +288,7 @@ class OpenIDVCIssuer(models.Model):
                 if field_name:
                     self.write({field_name: text})
         except Exception:
-            _logger.exception("Could not set default contexts json")
+            _logger.exception(f"Could not set default {field_name}")
         return text
 
     @api.model

@@ -28,9 +28,7 @@ class BeneficiaryOpenIDVCIssuer(models.Model):
 
     def issue_vc_Beneficiary(self, auth_claims, credential_request):
         self.ensure_one()
-        web_base_url = (
-            self.env["ir.config_parameter"].sudo().get_param("web.base.url").rstrip("/")
-        )
+        web_base_url = self.env["ir.config_parameter"].sudo().get_param("web.base.url").rstrip("/")
 
         reg_id = (
             self.env["g2p.reg.id"]
@@ -51,7 +49,9 @@ class BeneficiaryOpenIDVCIssuer(models.Model):
         partner = None
         if not reg_id:
             raise ValueError(
-                "ID not found in DB. Invalid Subject Received in auth claims. Or person not part of the program."
+                "ID not found in DB. "
+                "Invalid Subject Received in auth claims. "
+                "Or person not part of the program."
             )
 
         partner = reg_id.partner_id
@@ -63,9 +63,7 @@ class BeneficiaryOpenIDVCIssuer(models.Model):
 
         partner_dict = partner.read()[0]
         program_membership_dict = program_membership_id.read()[0]
-        reg_ids_dict = {
-            reg_id.id_type.name: reg_id.read()[0] for reg_id in partner.reg_ids
-        }
+        reg_ids_dict = {reg_id.id_type.name: reg_id.read()[0] for reg_id in partner.reg_ids}
         program_dict = self.program_id.read()[0]
 
         curr_datetime = f'{datetime.utcnow().isoformat(timespec = "milliseconds")}Z'
@@ -79,9 +77,7 @@ class BeneficiaryOpenIDVCIssuer(models.Model):
                     "curr_datetime": curr_datetime,
                     "partner": partner_dict,
                     "partner_address": self.get_full_address(partner.address),
-                    "partner_face": self.get_image_base64_data_in_url(
-                        partner.image_1920.decode()
-                    ),
+                    "partner_face": self.get_image_base64_data_in_url(partner.image_1920.decode()),
                     "reg_ids": reg_ids_dict,
                     "program_membership": program_membership_dict,
                     "program": program_dict,

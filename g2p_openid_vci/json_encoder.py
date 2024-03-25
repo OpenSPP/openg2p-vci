@@ -8,7 +8,9 @@ class VCJSONEncoder(json.JSONEncoder):
         if isinstance(obj, bytes):
             return base64.b64encode(obj).decode()
         if isinstance(obj, datetime):
-            return f'{obj.astimezone(tz=timezone.utc).replace(tzinfo=None).isoformat(timespec="milliseconds")}Z'
+            return (
+                f'{obj.astimezone(tz=timezone.utc).replace(tzinfo=None).isoformat(timespec="milliseconds")}Z'
+            )
         if isinstance(obj, date):
             return obj.isoformat()
         return json.JSONEncoder.default(self, obj)

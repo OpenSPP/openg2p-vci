@@ -6,15 +6,13 @@
     "sequence": 1,
     "author": "OpenG2P",
     "website": "https://openg2p.org",
-    "license": "MPL-2",
+    "license": "Other OSI approved licence",
     "development_status": "Alpha",
     "depends": [
         "g2p_registry_base",
         "g2p_encryption",
     ],
-    "external_dependencies": {
-        "python": ["cryptography<37", "python-jose", "pyjq", "PyLD"]
-    },
+    "external_dependencies": {"python": ["cryptography<37", "python-jose", "pyjq", "PyLD"]},
     "data": [
         "security/ir.model.access.csv",
         "views/vci_issuers.xml",

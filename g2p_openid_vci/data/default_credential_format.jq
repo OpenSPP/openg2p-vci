@@ -13,24 +13,24 @@
         "name": [
             {
                 "language": "eng",
-                "value": .partner.name
+                "value": (.partner.name // null)
             }
         ],
         "fullName": [
             {
                 "language": "eng",
-                "value": .partner.name
+                "value": (.partner.name // null)
             }
         ],
         "gender": [
             {
                 "language": "eng",
-                "value": .partner.gender
+                "value": (.partner.gender // null)
             }
         ],
-        "dateOfBirth": .partner.birthdate,
-        "email": .partner.email,
-        "phone": .partner.phone,
+        "dateOfBirth": (.partner.birthdate // null),
+        "email": (.partner.email // null),
+        "phone": (.partner.phone // null),
         "addressLine1": [
             {
                 "language": "eng",

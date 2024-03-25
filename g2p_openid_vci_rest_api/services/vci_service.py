@@ -26,7 +26,6 @@ _logger = logging.getLogger(__name__)
 class OpenIdVCIRestService(Component):
     _name = "openid_vci_base.rest.service"
     _inherit = ["base.rest.service"]
-    _usage = "vci"
     _collection = "base.rest.openid.vci.services"
     _description = """
         OpenID for VCI API Services
@@ -45,17 +44,13 @@ class OpenIdVCIRestService(Component):
         output_param=PydanticModel(CredentialBaseResponse),
     )
     def post_credential(self, credential_request: CredentialRequest):
-        token = request.httprequest.headers.get("Authorization", "").removeprefix(
-            "Bearer"
-        )
+        token = request.httprequest.headers.get("Authorization", "").removeprefix("Bearer")
         if not token:
             raise Unauthorized("Invalid Bearer Token received.")
         try:
             # TODO: Split into smaller steps to better handle errors
             return CredentialResponse(
-                **self.env["g2p.openid.vci.issuers"].issue_vc(
-                    credential_request.dict(), token.strip()
-                )
+                **self.env["g2p.openid.vci.issuers"].issue_vc(credential_request.dict(), token.strip())
             )
         except Exception as e:
             _logger.exception("Error while handling credential request")
@@ -96,12 +91,8 @@ class OpenIdVCIRestService(Component):
         search_domain = []
         if issuer_name:
             search_domain.append(("name", "=", issuer_name))
-        vci_issuers = (
-            self.env["g2p.openid.vci.issuers"].sudo().search(search_domain).read()
-        )
-        web_base_url = (
-            self.env["ir.config_parameter"].sudo().get_param("web.base.url").rstrip("/")
-        )
+        vci_issuers = self.env["g2p.openid.vci.issuers"].sudo().search(search_domain).read()
+        web_base_url = self.env["ir.config_parameter"].sudo().get_param("web.base.url").rstrip("/")
         cred_configs = None
         for issuer in vci_issuers:
             issuer["web_base_url"] = web_base_url
@@ -137,19 +128,13 @@ class OpenIdVCIRestService(Component):
         output_param=PydanticModel(VCIBaseModel),
     )
     def get_openid_contexts_json(self):
-        web_base_url = (
-            self.env["ir.config_parameter"].sudo().get_param("web.base.url").rstrip("/")
-        )
-        context_jsons = (
-            self.env["g2p.openid.vci.issuers"].sudo().search([]).read(["contexts_json"])
-        )
+        web_base_url = self.env["ir.config_parameter"].sudo().get_param("web.base.url").rstrip("/")
+        context_jsons = self.env["g2p.openid.vci.issuers"].sudo().search([]).read(["contexts_json"])
         final_context = {"@context": {}}
         for context in context_jsons:
             context = context["contexts_json"].strip()
             if context:
                 final_context["@context"].update(
-                    json.loads(context.replace("web_base_url", web_base_url))[
-                        "@context"
-                    ]
+                    json.loads(context.replace("web_base_url", web_base_url))["@context"]
                 )
         return VCIBaseModel(**final_context)

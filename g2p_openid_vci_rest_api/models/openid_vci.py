@@ -71,6 +71,4 @@ class CredentialIssuerResponse(VCIBaseModel):
     credential_issuer: str
     credential_endpoint: str
     credentials_supported: Optional[List[CredentialIssuerConfigResponse]] = None
-    credential_configurations_supported: Optional[
-        Dict[str, CredentialIssuerConfigResponse]
-    ] = None
+    credential_configurations_supported: Optional[Dict[str, CredentialIssuerConfigResponse]] = None
