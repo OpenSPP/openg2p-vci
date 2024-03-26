@@ -22,7 +22,6 @@ Available addons
 addon | version | maintainers | summary
 --- | --- | --- | ---
 [g2p_openid_vci](g2p_openid_vci/) | 17.0.1.2.0 |  | G2P OpenID VCI: Base
-[g2p_openid_vci_programs](g2p_openid_vci_programs/) | 17.0.1.2.0 |  | G2P OpenID VCI: Program Beneficiaries
 [g2p_openid_vci_rest_api](g2p_openid_vci_rest_api/) | 17.0.1.2.0 |  | G2P OpenID VCI: Rest API
 
 [//]: # (end addons)
