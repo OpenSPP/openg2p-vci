@@ -1,2 +1,4 @@
+jwcrypto
 git+https://github.com/OpenG2P/openg2p-registry@17.0-develop#subdirectory=setup/g2p_registry_base
+git+https://github.com/OpenG2P/openg2p-registry@17.0-develop#subdirectory=setup/g2p_registry_individual
 git+https://github.com/OpenG2P/openg2p-security@17.0-develop#subdirectory=setup/g2p_encryption

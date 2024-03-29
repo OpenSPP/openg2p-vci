@@ -1,5 +1,6 @@
 import json
 import logging
+import os
 import uuid
 from datetime import datetime
 
@@ -9,7 +10,8 @@ from cryptography.hazmat.primitives import hashes
 from jose import jwt
 from pyld import jsonld
 
-from odoo import api, fields, models, modules, tools
+from odoo import api, fields, models, tools
+from odoo.tools import misc
 
 from ..json_encoder import VCJSONEncoder
 
@@ -54,6 +56,9 @@ class OpenIDVCIssuer(models.Model):
         # TODO: Raise better errors and error types
         auth_claims_unverified = jwt.get_unverified_claims(token)
         auth_scopes = auth_claims_unverified.get("scope", "").split()
+        auth_aud = auth_claims_unverified.get("aud", "")
+        if isinstance(auth_aud, str):
+            auth_aud = auth_aud.split()
 
         request_format = credential_request["format"]
         request_types = credential_request["credential_definition"]["type"]
@@ -92,18 +97,11 @@ class OpenIDVCIssuer(models.Model):
                 issuer=auth_allowed_iss,
                 options={"verify_aud": False},
             )
-            if auth_allowed_aud and (
-                (
-                    isinstance(auth_claims_unverified["aud"], list)
-                    and set(auth_allowed_aud).issubset(set(auth_claims_unverified["aud"]))
-                )
-                or (
-                    isinstance(auth_claims_unverified["aud"], str)
-                    and auth_allowed_aud in auth_claims_unverified["aud"]
-                )
-            ):
+            if auth_allowed_aud and not set(auth_allowed_aud).issubset(set(auth_aud)):
                 raise ValueError("Invalid Audience")
         except Exception as e:
+            if isinstance(e, ValueError) and "Invalid Audience" in str(e):
+                raise e
             raise ValueError("Invalid Auth Token received") from e
 
         issue_vc_func = getattr(credential_issuer, f"issue_vc_{credential_issuer.issuer_type}")
@@ -278,10 +276,9 @@ class OpenIDVCIssuer(models.Model):
     def set_from_static_file_Registry(
         self, module_name="g2p_openid_vci", file_name="", field_name="", **kwargs
     ):
-        default_path = modules.get_resource_path(module_name, "data", file_name)
         text = ""
         try:
-            with open(default_path) as file:
+            with misc.file_open(os.path.join(module_name, "data", file_name)) as file:
                 text = file.read()
                 if field_name:
                     self.write({field_name: text})
@@ -289,14 +286,13 @@ class OpenIDVCIssuer(models.Model):
             _logger.exception(f"Could not set default {field_name}")
         return text
 
-    @api.model
-    def verify_proof_and_bind(self, credential_request):
-        # TODO: Verify proof and do wallet binding
-        # request_proof_type = credential_request["proof"]["proof_type"]
-        # request_proof_jwt = credential_request["proof"]["jwt"]
-        # request_proof = None
-        # if request_proof_type and request_proof_jwt and request_proof_type == "jwt":
-        #     request_proof = jwt.get_unverified_claims(request_proof_jwt)
-        # else:
-        #     raise ValueError("Only JWT proof supported")
-        pass
+    # TODO: Verify proof and do wallet binding
+    # @api.model
+    # def verify_proof_and_bind(self, credential_request):
+    #     request_proof_type = credential_request["proof"]["proof_type"]
+    #     request_proof_jwt = credential_request["proof"]["jwt"]
+    #     request_proof = None
+    #     if request_proof_type and request_proof_jwt and request_proof_type == "jwt":
+    #         request_proof = jwt.get_unverified_claims(request_proof_jwt)
+    #     else:
+    #         raise ValueError("Only JWT proof supported")
