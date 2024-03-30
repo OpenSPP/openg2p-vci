@@ -1,8 +1,7 @@
 import logging
 from typing import Annotated
 
-from fastapi import APIRouter, Depends, Header
-from werkzeug.exceptions import Unauthorized
+from fastapi import APIRouter, Depends, Header, HTTPException
 
 from odoo.api import Environment
 
@@ -25,12 +24,12 @@ openid_vci_router = APIRouter(tags=["openid vci"])
 @openid_vci_router.post("/credential", responses={200: {"model": CredentialBaseResponse}})
 def post_credential(
     credential_request: CredentialRequest,
-    authorization: Annotated[str, Header()],
     env: Annotated[Environment, Depends(odoo_env)],
+    authorization: Annotated[str, Header()] = "",
 ):
     token = authorization.removeprefix("Bearer")
     if not token:
-        raise Unauthorized("Invalid Bearer Token received.")
+        raise HTTPException(401, "Invalid Bearer Token received.")
     try:
         # TODO: Split into smaller steps to better handle errors
         return CredentialResponse(
@@ -40,8 +39,8 @@ def post_credential(
         _logger.exception("Error while handling credential request")
         # TODO: Remove this hardcoding
         return CredentialErrorResponse(
-            error="invalid_scope",
-            error_description=f"Invalid Scope. {e}",
+            error="invalid_credential_request",
+            error_description=f"Error issuing credential. {e}",
             c_nonce="",
             c_nonce_expires_in=1,
         )
