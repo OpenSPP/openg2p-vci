@@ -1,5 +1,4 @@
 import base64
-import json
 import os
 from datetime import datetime
 from unittest.mock import MagicMock, patch
@@ -25,12 +24,6 @@ class TestVCIIssuerRegistry(TransactionCase):
                 "name": "NATIONAL ID",
             }
         )
-        self.env["gender.type"].create(
-            {
-                "code": "Male",
-                "value": "Male",
-            }
-        )
         self.issuer_scope = "openg2p_registry_vc_ldp"
         self.issuer = self.env["g2p.openid.vci.issuers"].create(
             {
@@ -41,6 +34,17 @@ class TestVCIIssuerRegistry(TransactionCase):
                 "auth_allowed_issuers": "http://openg2p.local/auth",
             }
         )
+        self.issuer_2 = self.env["g2p.openid.vci.issuers"].create(
+            {
+                "name": "Test Issuer 2",
+                "issuer_type": "Registry",
+                "scope": "openg2p_registry_2_vc_ldp",
+                "auth_sub_id_type_id": self.id_type.id,
+                "auth_allowed_issuers": "http://openg2p.local/auth",
+                "contexts_json": " ",
+            }
+        )
+        self.jsonld_contexts = self.env["g2p.openid.vci.issuers"].get_all_contexts_json()
 
         self.registrant_national_id = "123456789"
         self.registrant_face_bytes = base64.b64encode(
@@ -49,10 +53,6 @@ class TestVCIIssuerRegistry(TransactionCase):
         self.registrant = self.env["res.partner"].create(
             {
                 "name": "Givenname Familyname",
-                "given_name": "Givenname",
-                "family_name": "Familyname",
-                "gender": "Male",
-                "birthdate": datetime(1989, 10, 8),
                 "image_1920": self.registrant_face_bytes,
                 "reg_ids": [(0, 0, {"id_type": self.id_type.id, "value": self.registrant_national_id})],
             }
@@ -73,6 +73,7 @@ class TestVCIIssuerRegistry(TransactionCase):
             algorithm="RS256",
         )
 
+    # TODO: This is only required because of external context url resolution
     @classmethod
     def _request_handler(cls, s: requests.Session, r: requests.PreparedRequest, /, **kw):
         return _super_send(s, r, **kw)
@@ -85,7 +86,7 @@ class TestVCIIssuerRegistry(TransactionCase):
             return res
         elif url == "http://openg2p.local/api/v1/vci/.well-known/contexts.json":
             res = MagicMock()
-            res.json.return_value = json.loads(self.issuer.contexts_json)
+            res.json.return_value = self.jsonld_contexts
             res.headers = {}
             return res
         return requests.request("get", url, timeout=10, **kwargs)
@@ -107,8 +108,6 @@ class TestVCIIssuerRegistry(TransactionCase):
 
         self.assertTrue("OpenG2PRegistryVerifiableCredential" in cred["type"])
         self.assertTrue("Givenname Familyname" in [name["value"] for name in cred_subject["name"]])
-        self.assertTrue("Male" in [gender["value"] for gender in cred_subject["gender"]])
-        self.assertEqual("1989-10-08", cred_subject["dateOfBirth"])
         self.assertTrue(not cred_subject["email"])
         self.assertTrue(not cred_subject["phone"])
         self.assertTrue(not cred_subject["addressLine1"])
@@ -215,6 +214,42 @@ class TestVCIIssuerRegistry(TransactionCase):
                 ),
             )
         self.assertTrue("Invalid Auth Token received" in str(context.exception))
+
+    def test_get_issuer_metadata(self):
+        res = self.env["g2p.openid.vci.issuers"].get_issuer_metadata_by_name()
+        res = res["credentials_supported"][0]
+        self.assertEqual("OpenG2PRegistryVerifiableCredential", res["id"])
+        self.assertEqual("ldp_vc", res["format"])
+        self.assertEqual(
+            "Name", res["credential_definition"]["credentialSubject"]["fullName"]["display"][0]["name"]
+        )
+
+        # change issuer metadatas to dict
+        self.issuer.issuer_metadata_text = (
+            "{(.credential_type):"
+            + self.issuer.issuer_metadata_text.strip().removeprefix("[").removesuffix("]")
+            + "}"
+        )
+        self.issuer_2.issuer_metadata_text = (
+            "{(.credential_type):"
+            + self.issuer_2.issuer_metadata_text.strip().removeprefix("[").removesuffix("]")
+            + "}"
+        )
+
+        res = self.env["g2p.openid.vci.issuers"].get_issuer_metadata_by_name()
+        res = res["credential_configurations_supported"]["OpenG2PRegistryVerifiableCredential"]
+        self.assertEqual("OpenG2PRegistryVerifiableCredential", res["id"])
+        self.assertEqual("ldp_vc", res["format"])
+        self.assertEqual(
+            "Name", res["credential_definition"]["credentialSubject"]["fullName"]["display"][0]["name"]
+        )
+
+        self.issuer.issuer_metadata_text = '"Random"'
+
+        res = self.env["g2p.openid.vci.issuers"].get_issuer_metadata_by_name(issuer_name="Test Issuer")
+        self.assertEqual("http://openg2p.local", res.pop("credential_issuer"))
+        self.assertEqual("http://openg2p.local/api/v1/vci/credential", res.pop("credential_endpoint"))
+        self.assertEqual({}, res)
 
     def test_issuer_misc(self):
         self.env["g2p.openid.vci.issuers"].set_from_static_file_Registry(

@@ -196,6 +196,57 @@ class OpenIDVCIssuer(models.Model):
             "proofPurpose": "assertionMethod",
         }
 
+    @api.model
+    def get_issuer_metadata_by_name(self, issuer_name=""):
+        """
+        If issuer_name param is null, this returns all issuer's metdata.
+        """
+        search_domain = []
+        if issuer_name:
+            search_domain.append(("name", "=", issuer_name))
+        vci_issuers = self.sudo().search(search_domain)
+        return vci_issuers.get_issuer_metadata()
+
+    def get_issuer_metadata(self):
+        vci_issuers = self.read()
+        web_base_url = self.env["ir.config_parameter"].sudo().get_param("web.base.url").rstrip("/")
+        cred_configs = None
+        for issuer in vci_issuers:
+            issuer["web_base_url"] = web_base_url
+            issuer_metadata = jq.first(
+                issuer["issuer_metadata_text"], VCJSONEncoder.python_dict_to_json_dict(issuer)
+            )
+            if isinstance(issuer_metadata, list):
+                if not cred_configs:
+                    cred_configs = []
+                cred_configs.extend(issuer_metadata)
+            elif isinstance(issuer_metadata, dict):
+                if not cred_configs:
+                    cred_configs = {}
+                cred_configs.update(issuer_metadata)
+        response = {
+            "credential_issuer": web_base_url,
+            "credential_endpoint": f"{web_base_url}/api/v1/vci/credential",
+        }
+        if isinstance(cred_configs, list):
+            response["credentials_supported"] = cred_configs
+        elif isinstance(cred_configs, dict):
+            response["credential_configurations_supported"] = cred_configs
+        return response
+
+    @api.model
+    def get_all_contexts_json(self):
+        web_base_url = self.env["ir.config_parameter"].sudo().get_param("web.base.url").rstrip("/")
+        context_jsons = self.sudo().search([]).read(["contexts_json"])
+        final_context = {"@context": {}}
+        for context in context_jsons:
+            context = context["contexts_json"].strip()
+            if context:
+                final_context["@context"].update(
+                    json.loads(context.replace("web_base_url", web_base_url))["@context"]
+                )
+        return final_context
+
     def get_auth_jwks(
         self,
         auth_issuer: str,
