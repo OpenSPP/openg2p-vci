@@ -22,33 +22,33 @@
                 "value": (.partner.name // null)
             }
         ],
-        "gender": [
+        "gender": (if .partner.gender then [
             {
                 "language": "eng",
-                "value": (.partner.gender // null)
+                "value": .partner.gender
             }
-        ],
+        ] else null end),
         "dateOfBirth": (.partner.birthdate // null),
         "email": (.partner.email // null),
         "phone": (.partner.phone // null),
-        "addressLine1": [
+        "addressLine1": (if .partner_address.street_address then [
             {
                 "language": "eng",
                 "value": .partner_address.street_address
             }
-        ],
-        "province": [
+        ] else null end),
+        "province": (if .partner_address.locality then [
             {
                 "language": "eng",
                 "value": .partner_address.locality
             }
-        ],
-        "region": [
+        ] else null end),
+        "region": (if .partner_address.region then [
             {
                 "language": "eng",
                 "value": .partner_address.region
             }
-        ],
+        ] else null end),
         "postalCode": .partner_address.postal_code,
         "face": .partner_face,
         "UIN": .reg_ids["NATIONAL ID"]?.value
