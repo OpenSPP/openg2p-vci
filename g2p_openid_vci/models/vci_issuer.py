@@ -1,5 +1,6 @@
 import json
 import logging
+import os
 import uuid
 from datetime import datetime
 
@@ -9,7 +10,8 @@ from cryptography.hazmat.primitives import hashes
 from jose import jwt
 from pyld import jsonld
 
-from odoo import api, fields, models, modules, tools
+from odoo import api, fields, models, tools
+from odoo.tools import misc
 
 from ..json_encoder import VCJSONEncoder
 
@@ -54,6 +56,9 @@ class OpenIDVCIssuer(models.Model):
         # TODO: Raise better errors and error types
         auth_claims_unverified = jwt.get_unverified_claims(token)
         auth_scopes = auth_claims_unverified.get("scope", "").split()
+        auth_aud = auth_claims_unverified.get("aud", "")
+        if isinstance(auth_aud, str):
+            auth_aud = auth_aud.split()
 
         request_format = credential_request["format"]
         request_types = credential_request["credential_definition"]["type"]
@@ -92,18 +97,11 @@ class OpenIDVCIssuer(models.Model):
                 issuer=auth_allowed_iss,
                 options={"verify_aud": False},
             )
-            if auth_allowed_aud and (
-                (
-                    isinstance(auth_claims_unverified["aud"], list)
-                    and set(auth_allowed_aud).issubset(set(auth_claims_unverified["aud"]))
-                )
-                or (
-                    isinstance(auth_claims_unverified["aud"], str)
-                    and auth_allowed_aud in auth_claims_unverified["aud"]
-                )
-            ):
+            if auth_allowed_aud and not set(auth_allowed_aud).issubset(set(auth_aud)):
                 raise ValueError("Invalid Audience")
         except Exception as e:
+            if isinstance(e, ValueError) and "Invalid Audience" in str(e):
+                raise e
             raise ValueError("Invalid Auth Token received") from e
 
         issue_vc_func = getattr(credential_issuer, f"issue_vc_{credential_issuer.issuer_type}")
@@ -198,6 +196,57 @@ class OpenIDVCIssuer(models.Model):
             "proofPurpose": "assertionMethod",
         }
 
+    @api.model
+    def get_issuer_metadata_by_name(self, issuer_name=""):
+        """
+        If issuer_name param is null, this returns all issuer's metdata.
+        """
+        search_domain = []
+        if issuer_name:
+            search_domain.append(("name", "=", issuer_name))
+        vci_issuers = self.sudo().search(search_domain)
+        return vci_issuers.get_issuer_metadata()
+
+    def get_issuer_metadata(self):
+        vci_issuers = self.read()
+        web_base_url = self.env["ir.config_parameter"].sudo().get_param("web.base.url").rstrip("/")
+        cred_configs = None
+        for issuer in vci_issuers:
+            issuer["web_base_url"] = web_base_url
+            issuer_metadata = jq.first(
+                issuer["issuer_metadata_text"], VCJSONEncoder.python_dict_to_json_dict(issuer)
+            )
+            if isinstance(issuer_metadata, list):
+                if not cred_configs:
+                    cred_configs = []
+                cred_configs.extend(issuer_metadata)
+            elif isinstance(issuer_metadata, dict):
+                if not cred_configs:
+                    cred_configs = {}
+                cred_configs.update(issuer_metadata)
+        response = {
+            "credential_issuer": web_base_url,
+            "credential_endpoint": f"{web_base_url}/api/v1/vci/credential",
+        }
+        if isinstance(cred_configs, list):
+            response["credentials_supported"] = cred_configs
+        elif isinstance(cred_configs, dict):
+            response["credential_configurations_supported"] = cred_configs
+        return response
+
+    @api.model
+    def get_all_contexts_json(self):
+        web_base_url = self.env["ir.config_parameter"].sudo().get_param("web.base.url").rstrip("/")
+        context_jsons = self.sudo().search([]).read(["contexts_json"])
+        final_context = {"@context": {}}
+        for context in context_jsons:
+            context = context["contexts_json"].strip()
+            if context:
+                final_context["@context"].update(
+                    json.loads(context.replace("web_base_url", web_base_url))["@context"]
+                )
+        return final_context
+
     def get_auth_jwks(
         self,
         auth_issuer: str,
@@ -278,10 +327,9 @@ class OpenIDVCIssuer(models.Model):
     def set_from_static_file_Registry(
         self, module_name="g2p_openid_vci", file_name="", field_name="", **kwargs
     ):
-        default_path = modules.get_resource_path(module_name, "data", file_name)
         text = ""
         try:
-            with open(default_path) as file:
+            with misc.file_open(os.path.join(module_name, "data", file_name)) as file:
                 text = file.read()
                 if field_name:
                     self.write({field_name: text})
@@ -289,14 +337,13 @@ class OpenIDVCIssuer(models.Model):
             _logger.exception(f"Could not set default {field_name}")
         return text
 
-    @api.model
-    def verify_proof_and_bind(self, credential_request):
-        # TODO: Verify proof and do wallet binding
-        # request_proof_type = credential_request["proof"]["proof_type"]
-        # request_proof_jwt = credential_request["proof"]["jwt"]
-        # request_proof = None
-        # if request_proof_type and request_proof_jwt and request_proof_type == "jwt":
-        #     request_proof = jwt.get_unverified_claims(request_proof_jwt)
-        # else:
-        #     raise ValueError("Only JWT proof supported")
-        pass
+    # TODO: Verify proof and do wallet binding
+    # @api.model
+    # def verify_proof_and_bind(self, credential_request):
+    #     request_proof_type = credential_request["proof"]["proof_type"]
+    #     request_proof_jwt = credential_request["proof"]["jwt"]
+    #     request_proof = None
+    #     if request_proof_type and request_proof_jwt and request_proof_type == "jwt":
+    #         request_proof = jwt.get_unverified_claims(request_proof_jwt)
+    #     else:
+    #         raise ValueError("Only JWT proof supported")
