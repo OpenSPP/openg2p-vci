@@ -42,7 +42,7 @@ class OpenIdVCIRestService(Component):
         output_param=PydanticModel(CredentialBaseResponse),
     )
     def post_credential(self, credential_request: CredentialRequest):
-        token = request.httprequest.headers.get("Authorization", "").removeprefix("Bearer")
+        token = request.httprequest.headers.get("Authorization", "").replace("Bearer", "", 1)
         if not token:
             raise Unauthorized("Invalid Bearer Token received.")
         try:

@@ -221,14 +221,10 @@ class TestVCIIssuerRegistry(TransactionCase):
 
         # change issuer metadatas to dict
         self.issuer.issuer_metadata_text = (
-            "{(.credential_type):"
-            + self.issuer.issuer_metadata_text.strip().removeprefix("[").removesuffix("]")
-            + "}"
+            "{(.credential_type):" + self.issuer.issuer_metadata_text.strip()[1:-1] + "}"
         )
         self.issuer_2.issuer_metadata_text = (
-            "{(.credential_type):"
-            + self.issuer_2.issuer_metadata_text.strip().removeprefix("[").removesuffix("]")
-            + "}"
+            "{(.credential_type):" + self.issuer_2.issuer_metadata_text.strip()[1:-1] + "}"
         )
 
         res = self.env["g2p.openid.vci.issuers"].get_issuer_metadata_by_name()
