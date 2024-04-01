@@ -252,8 +252,8 @@ class OpenIDVCIssuer(models.Model):
     def get_auth_jwks(
         self,
         auth_issuer: str,
-        auth_allowed_issuers: list[str],
-        auth_allowed_jwks_urls: list[str],
+        auth_allowed_issuers: list,
+        auth_allowed_jwks_urls: list,
     ):
         self.ensure_one()
         jwk_url = None
