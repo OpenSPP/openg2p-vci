@@ -2,6 +2,7 @@
 <!-- /!\ Non OCA Context : Set here the badge of your runbot / runboat instance. -->
 [![Pre-commit Status](https://github.com/OpenG2P/openg2p-vci/actions/workflows/pre-commit.yml/badge.svg?branch=15.0-develop)](https://github.com/OpenG2P/openg2p-vci/actions/workflows/pre-commit.yml?query=branch%3A15.0-develop)
 [![Build Status](https://github.com/OpenG2P/openg2p-vci/actions/workflows/test.yml/badge.svg?branch=15.0-develop)](https://github.com/OpenG2P/openg2p-vci/actions/workflows/test.yml?query=branch%3A15.0-develop)
+[![codecov](https://codecov.io/gh/openg2p/openg2p-vci/branch/15.0-develop/graph/badge.svg)](https://codecov.io/gh/openg2p/openg2p-vci)
 <!-- /!\ Non OCA Context : Set here the badge of your translation instance. -->
 
 <!-- /!\ do not modify above this line -->
