@@ -12,7 +12,7 @@
         "fastapi",
         "extendable_fastapi",
     ],
-    "external_dependencies": {"python": ["extendable-pydantic", "pydantic", "pyjq"]},
+    "external_dependencies": {"python": ["extendable-pydantic", "pydantic", "jq"]},
     "data": ["data/fastapi_endpoint_vci.xml"],
     "assets": {
         "web.assets_backend": [],

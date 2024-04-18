@@ -4,7 +4,7 @@ import os
 import uuid
 from datetime import datetime
 
-import pyjq as jq
+import jq
 import requests
 from cryptography.hazmat.primitives import hashes
 from jose import jwt
