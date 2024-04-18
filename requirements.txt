@@ -2,6 +2,6 @@
 PyLD
 cryptography<37
 extendable-pydantic
-pydantic
 jq
+pydantic
 python-jose
