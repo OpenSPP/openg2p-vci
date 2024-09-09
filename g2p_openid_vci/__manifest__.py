@@ -6,8 +6,8 @@
     "sequence": 1,
     "author": "OpenG2P",
     "website": "https://openg2p.org",
-    "license": "Other OSI approved licence",
-    "development_status": "Alpha",
+    "license": "LGPL-3",
+    "development_status": "Beta",
     "depends": [
         "g2p_registry_base",
         "g2p_encryption",
